@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Threading.Tasks;
+using TextLib;
 
 namespace pdf_rclick
 {
@@ -69,10 +70,10 @@ namespace pdf_rclick
             try
             {
                 //設定ファイル読み込み
-                TextLib.IniFileEx iniFileEx = new TextLib.IniFileEx();
+                IniFile iniFile = new IniFile();
 
                 //プレビューを実行するファイルサイズ上限MB
-                previewSize = iniFileEx.GetKeyValueInt("setting", "previewSize", 2, 0, 1000);
+                previewSize = iniFile.GetKeyValueInt("setting", "previewSize", 2, 0, 1000, true);
                 if (previewSize == 0)
                 {
                     label_preview.Text = "プレビューなし";
@@ -83,24 +84,24 @@ namespace pdf_rclick
                 }
 
                 //最前面表示設定
-                TopMost = checkBox_topmost.Checked = iniFileEx.GetKeyValueInt("output", "topmost", 0, 0, 1) == 1;
+                TopMost = checkBox_topmost.Checked = iniFile.GetKeyValueBool("output", "topmost", false, true);
 
                 //出力先フォルダ
-                int folderindex = iniFileEx.GetKeyValueInt("output", "folder", 0, 0, 100);
+                int folderindex = iniFile.GetKeyValueInt("output", "folder", 0, 0, 100, true);
                 if (folderindex < comboBox_folder.Items.Count)
                 {
                     comboBox_folder.SelectedIndex = folderindex;
                 }
 
                 //出力ファイル名
-                string outputfilename = iniFileEx.GetKeyValueStringWithoutEmpty("output", "filename", "concat");
+                string outputfilename = iniFile.GetKeyValueStringWithoutEmpty("output", "filename", "concat", true);
                 if (isCorrectFilename(outputfilename))
                 {
                     textBox_outputfile.Text = outputfilename;
                 }
 
                 //処理
-                int actionindex = iniFileEx.GetKeyValueInt("output", "action", 0, 0, 100);
+                int actionindex = iniFile.GetKeyValueInt("output", "action", 0, 0, 100, true);
                 if (actionindex < comboBox_action.Items.Count)
                 {
                     comboBox_action.SelectedIndex = actionindex;
@@ -735,7 +736,7 @@ namespace pdf_rclick
         private void readFolderFile()
         {
             //ファイル読み込み
-            string str = TextLib.TextFile.Read(AppInfo.folderfile);
+            string str = TextFile.Read(AppInfo.folderfile);
 
             //フォルダリスト初期化
             folders.Clear();
@@ -761,7 +762,7 @@ namespace pdf_rclick
         private void writeFolderFile()
         {
             string str = string.Join(Environment.NewLine, folders.ToArray());
-            TextLib.TextFile.Write(AppInfo.folderfile, str);
+            TextFile.Write(AppInfo.folderfile, str);
         }
 
         ///////////////////////////////////////////////////////////////////////// 結合後の処理
@@ -954,7 +955,7 @@ namespace pdf_rclick
         private void readActionFile()
         {
             //ファイル読み込み
-            string str = TextLib.TextFile.Read(AppInfo.actionfile);
+            string str = TextFile.Read(AppInfo.actionfile);
 
             //結合後の処理リスト初期化
             actions.Clear();
@@ -983,7 +984,7 @@ namespace pdf_rclick
         private void writeActionFile()
         {
             string str = String.Join(Environment.NewLine, actions.ToArray());
-            TextLib.TextFile.Write(AppInfo.actionfile, str);
+            TextFile.Write(AppInfo.actionfile, str);
         }
 
         ///////////////////////////////////////////////////////////////////////// 現在の設定を保存
@@ -993,24 +994,24 @@ namespace pdf_rclick
             //出力ファイル名の中にファイルに使えない文字が入っていない場合
             if (isCorrectFilename(textBox_outputfile.Text))
             {
-                TextLib.IniFileEx iniFileEx = new TextLib.IniFileEx();
+                IniFile iniFile = new TextLib.IniFile();
 
                 //TopMost
-                iniFileEx.SetKeyValueInt("output", "topmost", checkBox_topmost.Checked ? 1 : 0);
+                iniFile.SetKeyValueBool("output", "topmost", checkBox_topmost.Checked);
 
                 //出力先フォルダのIndex
                 if (comboBox_folder.SelectedIndex >= 0)
                 {
-                    iniFileEx.SetKeyValueInt("output", "folder", comboBox_folder.SelectedIndex);
+                    iniFile.SetKeyValueInt("output", "folder", comboBox_folder.SelectedIndex);
                 }
 
                 //出力ファイル名
-                iniFileEx.SetKeyValueString("output", "filename", this.textBox_outputfile.Text);
+                iniFile.SetKeyValueString("output", "filename", this.textBox_outputfile.Text);
 
                 //結合後の処理のIndex
                 if (comboBox_action.SelectedIndex >= 0)
                 {
-                    iniFileEx.SetKeyValueInt("output", "action", comboBox_action.SelectedIndex);
+                    iniFile.SetKeyValueInt("output", "action", comboBox_action.SelectedIndex);
                 }
 
                 MessageBox.Show("保存しました。");
