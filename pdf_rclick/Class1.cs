@@ -44,7 +44,8 @@ namespace pdf_rclick
     //そのうえでコードの中で選択ファイルが全てpdfかどうかを判定するようにしている。
     //[COMServerAssociation(AssociationType.ClassOfExtension, ".pdf")]
     [COMServerAssociation(AssociationType.AllFilesAndFolders)]
-    public class Class1 : SharpContextMenu
+    //他のSharpShellを使用するソフトウェアとclass名が重複していると正常に機能しない
+    public class ClassNekotadon_pdf_rclick : SharpContextMenu
     {
         int dpiSetting = 150;//画像保存時の解像度初期値
         string contextName = "PDF処理(&A)";//コンテキストメニュー名
