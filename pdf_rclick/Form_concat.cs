@@ -1113,7 +1113,7 @@ namespace pdf_rclick
                 }
 
                 //結合処理実施
-                new ClassNekotadon_pdf_rclick().pdf_concat(paths, outputfile, action);
+                new NekotadonPdfRclickExtension().pdf_concat(paths, outputfile, action);
 
                 //閉じる
                 Close();
