@@ -34,8 +34,6 @@ using PdfSharp.Drawing;
 
 //snkファイルをこのファイルと同じフォルダに入れる
 
-using TextLib;
-
 namespace pdf_rclick
 {
     [ComVisible(true)]
@@ -81,7 +79,7 @@ namespace pdf_rclick
             try
             {
                 //設定ファイル読み込み
-                IniFile iniFile = new IniFile();
+                TextLib.IniFile iniFile = new TextLib.IniFile();
                 dpiSetting = iniFile.GetKeyValueInt("setting", "dpi", 150, 36, 640, true);
                 contextName = iniFile.GetKeyValueStringWithoutEmpty("setting", "name", "PDF処理(&A)", true);
             }

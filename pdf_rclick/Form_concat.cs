@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Threading.Tasks;
-using TextLib;
 
 namespace pdf_rclick
 {
@@ -70,7 +69,7 @@ namespace pdf_rclick
             try
             {
                 //設定ファイル読み込み
-                IniFile iniFile = new IniFile();
+                TextLib.IniFile iniFile = new TextLib.IniFile();
 
                 //プレビューを実行するファイルサイズ上限MB
                 previewSize = iniFile.GetKeyValueInt("setting", "previewSize", 2, 0, 1000, true);
@@ -735,25 +734,28 @@ namespace pdf_rclick
         //フォルダ設定ファイル(.ini)読み込み
         private void readFolderFile()
         {
-            //ファイル読み込み
-            string str = TextFile.Read(AppInfo.folderfile);
-
-            //フォルダリスト初期化
-            folders.Clear();
-
-            //1行ごとに処理
-            foreach (string folder in str.Replace("\r\n", "\n").Split('\n'))
+            if (File.Exists(AppInfo.folderfile))
             {
-                try
+                //ファイル読み込み
+                string str = TextLib.TextFile.Read(AppInfo.folderfile) ?? "";
+
+                //フォルダリスト初期化
+                folders.Clear();
+
+                //1行ごとに処理
+                foreach (string folder in str.Replace("\r\n", "\n").Split('\n'))
                 {
-                    if (Directory.Exists(folder))
+                    try
                     {
-                        folders.Add(folder);
+                        if (Directory.Exists(folder))
+                        {
+                            folders.Add(folder);
+                        }
                     }
-                }
-                catch (Exception)
-                {
-                    ;
+                    catch (Exception)
+                    {
+                        ;
+                    }
                 }
             }
         }
@@ -762,7 +764,7 @@ namespace pdf_rclick
         private void writeFolderFile()
         {
             string str = string.Join(Environment.NewLine, folders.ToArray());
-            TextFile.Write(AppInfo.folderfile, str);
+            TextLib.TextFile.Write(AppInfo.folderfile, str);
         }
 
         ///////////////////////////////////////////////////////////////////////// 結合後の処理
@@ -954,28 +956,31 @@ namespace pdf_rclick
         //処理設定ファイル(.ini)読み込み
         private void readActionFile()
         {
-            //ファイル読み込み
-            string str = TextFile.Read(AppInfo.actionfile);
-
-            //結合後の処理リスト初期化
-            actions.Clear();
-
-            //1行ごとに処理
-            foreach (string file in str.Replace("\r\n", "\n").Split('\n'))
+            if (File.Exists(AppInfo.actionfile))
             {
-                try
-                {
-                    string ext = Path.GetExtension(file).ToLower();
+                //ファイル読み込み
+                string str = TextLib.TextFile.Read(AppInfo.actionfile) ?? "";
 
-                    //.exeまたは.batの場合
-                    if (ext == ".exe" || ext == ".bat")
-                    {
-                        actions.Add(file);
-                    }
-                }
-                catch (Exception)
+                //結合後の処理リスト初期化
+                actions.Clear();
+
+                //1行ごとに処理
+                foreach (string file in str.Replace("\r\n", "\n").Split('\n'))
                 {
-                    ;
+                    try
+                    {
+                        string ext = Path.GetExtension(file).ToLower();
+
+                        //.exeまたは.batの場合
+                        if (ext == ".exe" || ext == ".bat")
+                        {
+                            actions.Add(file);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        ;
+                    }
                 }
             }
         }
@@ -983,8 +988,8 @@ namespace pdf_rclick
         //処理設定ファイル(.ini)書き込み
         private void writeActionFile()
         {
-            string str = String.Join(Environment.NewLine, actions.ToArray());
-            TextFile.Write(AppInfo.actionfile, str);
+            string str = string.Join(Environment.NewLine, actions.ToArray());
+            TextLib.TextFile.Write(AppInfo.actionfile, str);
         }
 
         ///////////////////////////////////////////////////////////////////////// 現在の設定を保存
@@ -994,7 +999,7 @@ namespace pdf_rclick
             //出力ファイル名の中にファイルに使えない文字が入っていない場合
             if (isCorrectFilename(textBox_outputfile.Text))
             {
-                IniFile iniFile = new TextLib.IniFile();
+                TextLib.IniFile iniFile = new TextLib.IniFile();
 
                 //TopMost
                 iniFile.SetKeyValueBool("output", "topmost", checkBox_topmost.Checked);
