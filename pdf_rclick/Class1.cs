@@ -46,6 +46,9 @@ namespace pdf_rclick
     public class NekotadonPdfRclickExtension : SharpContextMenu
     {
         int dpiSetting = 150;//画像保存時の解像度初期値
+        int[] dpis = { 36, 72, 150, 200, 360, 640 };
+        System.Text.Encoding encoding = null;//テキスト保存時の文字コード
+        List<System.Text.Encoding> encodings = new List<System.Text.Encoding>();
         string contextName = "PDF処理(&A)";//コンテキストメニュー名
 
         protected override bool CanShowMenu()
@@ -76,12 +79,22 @@ namespace pdf_rclick
                 pdfonly = false;
             }
 
+            //文字コード
+            encodings = new List<System.Text.Encoding>
+            {
+                TextLib.EncodeLib.UTF8,//0
+                TextLib.EncodeLib.UTF8withBOM,//1
+                TextLib.EncodeLib.SJIS//2
+            };
+
             try
             {
                 //設定ファイル読み込み
                 TextLib.IniFile iniFile = new TextLib.IniFile();
-                dpiSetting = iniFile.GetKeyValueInt("setting", "dpi", 150, 36, 640, true);
+                dpiSetting = iniFile.GetKeyValueInt("setting", "dpi", 150, dpis.Min(), dpis.Max(), true);
                 contextName = iniFile.GetKeyValueStringWithoutEmpty("setting", "name", "PDF処理(&A)", true);
+                int encodingNum = iniFile.GetKeyValueInt("setting", "encode", 0, 0, encodings.Count - 1, true);
+                encoding = encodings[encodingNum];
             }
             catch (Exception)
             {
@@ -233,6 +246,128 @@ namespace pdf_rclick
             //メニューに追加
             menu.Items.Add(mainMenu);
 
+            //区切り
+            mainMenu.DropDownItems.Add(new ToolStripSeparator());
+
+            //その他
+            ToolStripMenuItem subMenu_other = new ToolStripMenuItem { Text = "その他" };
+
+            ToolStripMenuItem subMenu_setting = new ToolStripMenuItem { Text = "設定" };
+            subMenu_other.DropDownItems.Add(subMenu_setting);
+            TextLib.IniFile iniFile = new TextLib.IniFile();
+
+            //画像保存時の解像度
+            ToolStripMenuItem subMenu_setting_dpi = new ToolStripMenuItem { Text = "画像として保存時の解像度" };
+            subMenu_setting.DropDownItems.Add(subMenu_setting_dpi);
+
+            //画像保存時の解像度サブメニュー
+            int dpiCurrent = iniFile.GetKeyValueInt("setting", "dpi", 150, dpis.Min(), dpis.Max(), true);
+
+            bool dpiExist = false;
+            foreach (var dpi in dpis)
+            {
+                if (!dpiExist && dpiCurrent == dpi)
+                {
+                    dpiExist = true;
+                }
+                ToolStripMenuItem subMenu = new ToolStripMenuItem { Text = dpi.ToString() + "dpi", Checked = dpiCurrent == dpi };
+                subMenu.Click += (s, e) =>
+                {
+                    TextLib.IniFile iniFilebuf = new TextLib.IniFile();
+                    iniFilebuf.SetKeyValueInt("setting", "dpi", dpi);
+                    dpiSetting = dpi;
+                };
+                subMenu_setting_dpi.DropDownItems.Add(subMenu);
+            }
+            if (!dpiExist)
+            {
+                ToolStripMenuItem subMenu_dpi_custom = new ToolStripMenuItem { Text = "カスタム", Checked = true };
+                subMenu_setting_dpi.DropDownItems.Add(subMenu_dpi_custom);
+            }
+
+            //テキスト保存時の文字コード
+            ToolStripMenuItem subMenu_setting_code = new ToolStripMenuItem { Text = "テキスト保存時の文字コード" };
+            subMenu_setting.DropDownItems.Add(subMenu_setting_code);
+
+            //テキスト保存時の文字コードサブメニュー
+            ToolStripMenuItem subMenu_utf8 = new ToolStripMenuItem { Text = "UTF8" };
+            ToolStripMenuItem subMenu_utf8_with_bom = new ToolStripMenuItem { Text = "UTF8 with BOM" };
+            ToolStripMenuItem subMenu_sjis = new ToolStripMenuItem { Text = "Shift-JIS" };
+
+            subMenu_setting_code.DropDownItems.Add(subMenu_utf8);
+            subMenu_setting_code.DropDownItems.Add(subMenu_utf8_with_bom);
+            subMenu_setting_code.DropDownItems.Add(subMenu_sjis);
+
+            int encodingNum = iniFile.GetKeyValueInt("setting", "encode", 0, 0, encodings.Count - 1, true);
+            subMenu_utf8.Checked = encodingNum == 0;
+            subMenu_utf8_with_bom.Checked = encodingNum == 1;
+            subMenu_sjis.Checked = encodingNum == 2;
+
+            Action<object, int> action_encode = (s, num) =>
+            {
+                TextLib.IniFile iniFilebuf = new TextLib.IniFile();
+                if (num < 0 || encodings.Count <= num)
+                {
+                    num = 0;
+                }
+                iniFilebuf.SetKeyValueInt("setting", "encode", num);
+                encoding = encodings[num];
+            };
+
+            subMenu_utf8.Click += (s, e) => action_encode(s, 0);
+            subMenu_utf8_with_bom.Click += (s, e) => action_encode(s, 1);
+            subMenu_sjis.Click += (s, e) => action_encode(s, 2);
+
+            //結合ダイアログでのプレビュー
+            ToolStripMenuItem subMenu_setting_preview = new ToolStripMenuItem { Text = "結合ダイアログでのプレビュー" };
+            subMenu_setting.DropDownItems.Add(subMenu_setting_preview);
+
+            //結合ダイアログでのプレビューサブメニュー
+            int currentPreviewSize = iniFile.GetKeyValueInt("setting", "previewSize", 2, 0, 1000, true);
+            int[] previewSizes = { 0, 1, 2, 5, 10, 20, 50, 1000 };
+
+            bool previewSizeExist = false;
+            foreach (var previewSize in previewSizes)
+            {
+                if (!previewSizeExist && currentPreviewSize == previewSize)
+                {
+                    previewSizeExist = true;
+                }
+                ToolStripMenuItem subMenu = new ToolStripMenuItem { Text = previewSize.ToString() + "MB以下のファイルのみ", Checked = currentPreviewSize == previewSize };
+                if (previewSize == 0)
+                {
+                    subMenu.Text = "プレビューしない";
+                }
+
+                subMenu.Click += (s, e) =>
+                {
+                    TextLib.IniFile iniFilebuf = new TextLib.IniFile();
+                    iniFilebuf.SetKeyValueInt("setting", "previewSize", previewSize);
+                };
+                subMenu_setting_preview.DropDownItems.Add(subMenu);
+            }
+            if (currentPreviewSize != 0 && !previewSizeExist)
+            {
+                ToolStripMenuItem subMenu_preview_custom = new ToolStripMenuItem { Text = "カスタム", Checked = true };
+                subMenu_setting_preview.DropDownItems.Add(subMenu_preview_custom);
+            }
+
+            //区切り
+            subMenu_other.DropDownItems.Add(new ToolStripSeparator());
+
+            //バージョン情報
+            ToolStripMenuItem subMenu_version = new ToolStripMenuItem { Text = "バージョン情報" };
+            subMenu_other.DropDownItems.Add(subMenu_version);
+            subMenu_version.Click += (s, e) =>
+            {
+                MessageBox.Show("pdf_rclick ver."
+                 + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()
+                 + Environment.NewLine
+                 + Environment.NewLine
+                 + "Copyright (c) 2023 nekotadon", "バージョン情報");
+            };
+
+            mainMenu.DropDownItems.Add(subMenu_other);
             return menu;
         }
 
@@ -1125,7 +1260,7 @@ namespace pdf_rclick
                         if (isContinued())
                         {
                             //ファイルを作成
-                            sw = new StreamWriter(outputfile, false, new System.Text.UTF8Encoding(false));
+                            sw = new StreamWriter(outputfile, false, encoding ?? TextLib.EncodeLib.UTF8);
                             sw.Write(sb.ToString());
                         }
                     }
